@@ -1,0 +1,6 @@
+@Convofy.Auth_HostAddress = http://localhost:5081
+
+GET {{Convofy.Auth_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
