@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using System.Text;
+using Convofy.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -41,6 +43,15 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddDbContext<DatabaseContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), x => x.MigrationsHistoryTable("_EfMigrations", builder.Configuration.GetSection("Schema").GetSection("ConvofyDataSchema").Value)));
+
+builder.Services.AddCors(p => p.AddPolicy("development", builder =>
+        {
+            builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
+        }));
+
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
@@ -66,12 +77,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         NameClaimType = ClaimTypes.NameIdentifier
     };
 });
-
-builder.Services.AddCors(p => p.AddPolicy("development", builder =>
-        {
-            builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
-        }));
-
 
 var app = builder.Build();
 
