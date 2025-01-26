@@ -43,6 +43,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddHealthChecks();
+
+builder.Services.AddControllers();
 builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), x => x.MigrationsHistoryTable("_EfMigrations", builder.Configuration.GetSection("Schema").GetSection("ConvofyDataSchema").Value)));
 
@@ -51,6 +54,7 @@ builder.Services.AddCors(p => p.AddPolicy("development", builder =>
             builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
         }));
 
+builder.Services.AddAuthorization();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
@@ -78,6 +82,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
+builder.Services.AddScoped<Convofy.Interfaces.IValidator, Convofy.Util.Validator>();
+
 var app = builder.Build();
 
 app.UseAuthentication();
@@ -90,10 +96,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseCors("corsapp");
+    app.UseCors("development");
+} else {
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.Run();
 
