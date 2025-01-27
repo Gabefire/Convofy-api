@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Convofy.Auth/Convofy.Auth.csproj",
+                "${workspaceFolder}/Convofy.Main/Convofy.Main.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/Convofy.Auth/Convofy.Auth.csproj",
+                "${workspaceFolder}/Convofy.Main/Convofy.Main.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/Convofy.Auth/Convofy.Auth.csproj"
+                "${workspaceFolder}/Convofy.Main/Convofy.Main.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

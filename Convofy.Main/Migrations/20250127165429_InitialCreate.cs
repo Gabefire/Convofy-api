@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Convofy.Auth.Migrations
+namespace Convofy.Main.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -19,8 +19,10 @@ namespace Convofy.Auth.Migrations
                     UserName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     HashedPassword = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
-                    ProfilePicLink = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    ProfilePicLink = table.Column<string>(type: "text", nullable: true),
+                    Color = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValue: new DateTime(2025, 1, 27, 16, 54, 29, 483, DateTimeKind.Utc).AddTicks(870))
                 },
                 constraints: table =>
                 {

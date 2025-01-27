@@ -9,11 +9,13 @@ public class User
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
     [MaxLength(100), Required]
-    public string UserName { get; set; } = string.Empty;
+    public required string UserName { get; set; }
     [MinLength(6), Required]
-    public string? HashedPassword { get; set; }
+    public required string HashedPassword { get; set; }
     [EmailAddress, Required]
-    public string Email { get; set; } = string.Empty;
-    public string ProfilePicLink { get; set; } = string.Empty;
+    public required string Email { get; set; }
+    public string? ProfilePicLink { get; set; } = null;
+    public string? Color { get; set; } = null;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

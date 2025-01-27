@@ -15,7 +15,6 @@ namespace Convofy.Controllers;
 [Route("api/[controller]")]
 public class UserController(IConfiguration configuration, DatabaseContext context, ILogger<UserController> logger, IValidator validate) : ControllerBase
 {
-    private static readonly User user = new();
     private readonly DatabaseContext _context = context;
     private readonly IConfiguration _configuration = configuration;
     private readonly IValidator _validate = validate;
@@ -39,13 +38,13 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
 
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-        //Todo Add profile pic link
-        user.UserName = request.UserName;
-        user.HashedPassword = passwordHash;
-        user.Email = request.Email;
-        user.ProfilePicLink = request.ProfilePicLink;
-
-
+        var user = new User
+        {
+            UserName = request.UserName,
+            HashedPassword = passwordHash,
+            Email = request.Email,
+            ProfilePicLink = request.ProfilePicLink
+        };
 
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
@@ -62,6 +61,7 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
         // logins in with email. User name is a placeholder
 
         var user = await _context.Users.Where(x => x.Email == request.Email).FirstOrDefaultAsync();
+        _logger.LogInformation("info: User found: {User}", user?.Id);
         if (user == null)
         {
             return BadRequest("Password or username is incorrect");
@@ -74,7 +74,7 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
         };
         string token = CreateToken(user);
 
-        return Ok(new { token, userName = user.UserName, id = user.Id });
+        return Ok(new { token, userName = user.UserName, id = user.Id, color = user.Color });
     }
 
     // PUT edit user

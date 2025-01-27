@@ -9,10 +9,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Convofy.Auth.Migrations
+namespace Convofy.Main.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250126184049_InitialCreate")]
+    [Migration("20250127165429_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -31,6 +31,9 @@ namespace Convofy.Auth.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Color")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -43,8 +46,12 @@ namespace Convofy.Auth.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ProfilePicLink")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValue(new DateTime(2025, 1, 27, 16, 54, 29, 483, DateTimeKind.Utc).AddTicks(870));
 
                     b.Property<string>("UserName")
                         .IsRequired()
