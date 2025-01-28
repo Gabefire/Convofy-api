@@ -1,6 +1,6 @@
 using Convofy.Models.User;
 
-namespace Convofy.Interfaces
+namespace Convofy.Main.Interfaces
 {
     public interface IValidator
     {

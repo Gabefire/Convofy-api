@@ -1,10 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using Convofy.Models.User;
 using Convofy.Services;
-using Convofy.Interfaces;
+using Convofy.Main.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Convofy.Util
+namespace Convofy.Main.Util
 {
     public class Validator(DatabaseContext context) : IValidator
     {
@@ -19,12 +19,14 @@ namespace Convofy.Util
             if (token.IsNullOrEmpty() || token.Split(" ").Length < 2)
             {
                 return null;
-            };
+            }
+            ;
 
             if (!handler.CanReadToken(token.Split(" ")[1]))
             {
                 return null;
-            };
+            }
+            ;
 
             var jwtToken = handler.ReadToken(token.Split(" ")[1]) as JwtSecurityToken;
             if (jwtToken == null)

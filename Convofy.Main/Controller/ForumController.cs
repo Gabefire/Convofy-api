@@ -1,26 +1,25 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using Convofy.Services;
 using Microsoft.EntityFrameworkCore;
-using Convofy.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Convofy.Models.User;
-using Convofy.Main.Services.ForumService;
-
+using Convofy.Main.Interfaces;
+using Convofy.Main.Models.Forum;
+using Convofy.Main.Services;
 namespace Convofy.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ForumController(IConfiguration configuration, DatabaseContext context, ILogger<UserController> logger, IValidator validate) : ControllerBase
+public class ForumController(
+    IConfiguration configuration,
+    DatabaseContext context,
+    ILogger<UserController> logger,
+    IValidator validate,
+    IForumService forumService) : ControllerBase
 {
     private readonly DatabaseContext _context = context;
     private readonly IConfiguration _configuration = configuration;
     private readonly IValidator _validate = validate;
     private readonly ILogger _logger = logger;
-    private readonly ForumService _forumService = forumService;
+    private readonly IForumService _forumService = forumService;
     // GET all Forums
     [Authorize]
     [HttpGet]
@@ -53,7 +52,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Unauthorized();
         }
 
-        await _forumService.CreateForum(request);
+        await _forumService.CreateForum(request, user.Id);
         return Ok();
     }
 
@@ -68,7 +67,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Unauthorized();
         }
 
-        await _forumService.EditForum(forumDto, user.Id);
+        await _forumService.EditForum(forumDto);
         return Ok();
     }
 

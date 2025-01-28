@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace Convofy.Models.Post;
+namespace Convofy.Main.Models.Post;
 
 public class Post
 {

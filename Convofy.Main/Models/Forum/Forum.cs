@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace Convofy.Models.Forum;
+namespace Convofy.Main.Models.Forum;
 
 public class Forum
 {

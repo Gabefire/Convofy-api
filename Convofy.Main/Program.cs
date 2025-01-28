@@ -82,7 +82,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
-builder.Services.AddScoped<Convofy.Interfaces.IValidator, Convofy.Util.Validator>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IValidator, Convofy.Main.Util.Validator>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IForumService, Convofy.Main.Services.ForumService>();
 
 var app = builder.Build();
 
@@ -97,7 +98,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseCors("development");
-} else {
+}
+else
+{
     app.UseHttpsRedirection();
 }
 

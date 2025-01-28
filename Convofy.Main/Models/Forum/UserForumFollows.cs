@@ -1,4 +1,7 @@
-namespace Convofy.Models.Forum;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Convofy.Main.Models.Forum;
 
 public class UserForumFollows
 {

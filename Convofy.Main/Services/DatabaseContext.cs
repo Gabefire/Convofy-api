@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Convofy.Models.User;
-using Convofy.Models.Forum;
-namespace Convofy.Services;
+using Convofy.Main.Models.Forum;
+using Convofy.Main.Models.Post;
+
+namespace Convofy.Main.Services;
 public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
 {
     public required DbSet<User> Users { get; set; }
