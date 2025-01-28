@@ -14,7 +14,7 @@ public class User
     public required string HashedPassword { get; set; }
     [EmailAddress, Required]
     public required string Email { get; set; }
-    public string? ProfilePicLink { get; set; } = null;
+    public string? FileLink { get; set; } = null;
     public string? Color { get; set; } = null;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Convofy.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Convofy.Models.User;
+using Convofy.Main.Services.ForumService;
 
 namespace Convofy.Controllers;
 
@@ -19,7 +20,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
     private readonly IConfiguration _configuration = configuration;
     private readonly IValidator _validate = validate;
     private readonly ILogger _logger = logger;
-
+    private readonly ForumService _forumService = forumService;
     // GET all Forums
     [Authorize]
     [HttpGet]
@@ -36,7 +37,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return BadRequest("Invalid pagination parameters. Limit must be positive and offset must be non-negative.");
         }
 
-        var forums = await _context.Forums.Skip(offset).Take(limit).ToListAsync();
+        var forums = await _forumService.GetForums(limit, offset);
 
         return Ok(forums);
     }
@@ -52,9 +53,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Unauthorized();
         }
 
-        var forum = new Forum { CreatorUserId = user.Id, Title = request.Title, Content = request.Content, Color = request.Color, FileLink = request.FileLink };
-        _context.Forums.Add(forum);
-        await _context.SaveChangesAsync();
+        await _forumService.CreateForum(request);
         return Ok();
     }
 
@@ -69,22 +68,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Unauthorized();
         }
 
-        var existingForum = await _context.Forums.FirstOrDefaultAsync(f => f.Id == forumDto.Id);
-        if (existingForum == null)
-        {
-            return NotFound("Forum not found");
-        }
-
-        if (existingForum.CreatorUserId != user.Id)
-        {
-            return Forbid("Only the creator can edit this forum");
-        }
-
-        existingForum.Title = forumDto.Title ?? existingForum.Title;
-        existingForum.Content = forumDto.Content ?? existingForum.Content;
-        existingForum.Color = forumDto.Color ?? existingForum.Color;
-
-        await _context.SaveChangesAsync();
+        await _forumService.EditForum(forumDto, user.Id);
         return Ok();
     }
 
@@ -100,20 +84,8 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Unauthorized();
         }
 
-        var forumList = await _context.Forums
-            .Where(x => x.Title.ToLower().Contains(name.ToLower()))
-            .Select(x => new ForumSearchDto 
-            { 
-                Id = x.Id,
-                Title = x.Title,
-                Content = x.Content,
-                Color = x.Color,
-                FileLink = x.FileLink 
-            })
-            .Skip(offset)
-            .Take(limit)
-            .ToListAsync();
-            
+        var forumList = await _forumService.SearchForums(name, limit, offset);
+
         return Ok(forumList);
     }
 
@@ -139,9 +111,7 @@ public class ForumController(IConfiguration configuration, DatabaseContext conte
             return Forbid("Only the creator can delete this forum");
         }
 
-        _context.Forums.Remove(forum);
-        await _context.SaveChangesAsync();
-        _logger.LogInformation("[ForumController] Forum deleted successfully", id);
+        await _forumService.DeleteForum(id, user.Id);
         return Ok();
     }
 }
