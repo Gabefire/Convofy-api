@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
-namespace Convofy.Models;
+namespace Convofy.Models.User;
 
 [Index(nameof(Email), IsUnique = true)]
 public class User

@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using Convofy.Models;
+using Convofy.Models.User;
 using Convofy.Services;
 using Convofy.Interfaces;
 using Microsoft.IdentityModel.Tokens;

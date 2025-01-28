@@ -1,4 +1,4 @@
-using Convofy.Models;
+using Convofy.Models.User;
 
 namespace Convofy.Interfaces
 {

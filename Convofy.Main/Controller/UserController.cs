@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
-using Convofy.Models;
+using Convofy.Models.User;
 using Convofy.Services;
 using Microsoft.EntityFrameworkCore;
 using Convofy.Interfaces;
