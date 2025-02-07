@@ -9,4 +9,5 @@ public interface ICommentService
     Task<List<Comment>> GetComments(int limit, int offset);
     Task<List<Comment>> GetRootCommentsByPostId(Guid postId, int limit, int offset);
     Task<List<Comment>> GetChildCommentsByCommentId(Guid commentId);
+    Task<int> GetCommentCountByPostId(Guid postId);
 }

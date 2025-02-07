@@ -12,4 +12,5 @@ public interface IVotingService
     Task DeleteVote(UserVote userVote);
     Task<int> GetUpvoteCountByObjectId(Guid objectId);
     Task<int> GetDownvoteCountByObjectId(Guid objectId);
+    Task<(int upvotes, int downvotes)> GetUpvoteAndDownvoteCountByObjectId(Guid objectId);
 }

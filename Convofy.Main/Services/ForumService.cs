@@ -14,7 +14,7 @@ namespace Convofy.Main.Services
             var forum = new Forum
             {
                 Title = forumDto.Title,
-                Content = forumDto.Content,
+                Description = forumDto.Description,
                 Color = forumDto.Color ?? "#000000",
                 FileLink = forumDto.FileLink,
                 CreatorUserId = userId
@@ -29,7 +29,7 @@ namespace Convofy.Main.Services
         public async Task<Forum> EditForum(Forum forum, ForumDto forumDto)
         {
             forum.Title = forumDto.Title ?? forum.Title;
-            forum.Content = forumDto.Content ?? forum.Content;
+            forum.Description = forumDto.Description ?? forum.Description;
             forum.Color = forumDto.Color ?? forum.Color;
             forum.FileLink = forumDto.FileLink ?? forum.FileLink;
 
@@ -40,6 +40,11 @@ namespace Convofy.Main.Services
         public async Task<Forum> GetForumByIdOrFail(Guid id)
         {
             return await _context.Forums.FirstOrDefaultAsync(f => f.Id == id) ?? throw new Exception("Forum not found");
+        }
+
+        public async Task<Forum?> GetForumByTitle(string title)
+        {
+            return await _context.Forums.FirstOrDefaultAsync(f => f.Title == title);
         }
 
         public async Task<List<Forum>> GetForums(int limit, int offset)
@@ -64,7 +69,7 @@ namespace Convofy.Main.Services
             var forum = await GetForumByIdOrFail(forumDto.Id);
 
             forum.Title = forumDto.Title ?? forum.Title;
-            forum.Content = forumDto.Content ?? forum.Content;
+            forum.Description = forumDto.Description ?? forum.Description;
             forum.Color = forumDto.Color ?? forum.Color;
             forum.FileLink = forumDto.FileLink ?? forum.FileLink;
             await _context.SaveChangesAsync();

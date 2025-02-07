@@ -57,4 +57,9 @@ public class CommentService(DatabaseContext context, ILogger<CommentService> log
     {
         return await _context.Comments.Where(c => c.ParentCommentId == commentId).ToListAsync();
     }
+
+    public async Task<int> GetCommentCountByPostId(Guid postId)
+    {
+        return await _context.Comments.CountAsync(c => c.PostId == postId);
+    }
 }

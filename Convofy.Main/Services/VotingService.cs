@@ -92,4 +92,18 @@ public class VotingService : IVotingService
             .Where(v => v.ObjectId == objectId && !v.IsUpVote)
             .CountAsync();
     }
+
+    public async Task<(int upvotes, int downvotes)> GetUpvoteAndDownvoteCountByObjectId(Guid objectId)
+    {
+        var votes = await _context.UserVotes
+            .Where(v => v.ObjectId == objectId)
+            .GroupBy(v => v.IsUpVote)
+            .Select(g => new { IsUpVote = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.IsUpVote, x => x.Count);
+
+        return (
+            upvotes: votes.GetValueOrDefault(true, 0),
+            downvotes: votes.GetValueOrDefault(false, 0)
+        );
+    }
 }

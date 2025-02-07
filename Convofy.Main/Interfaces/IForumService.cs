@@ -10,4 +10,5 @@ public interface IForumService
     Task<List<Forum>> SearchForums(string search, int limit, int offset);
     Task<List<Forum>> GetFollowedForums(Guid userId, int limit, int offset);
     Task<Forum> EditForum(Forum forum, ForumDto forumDto);
+    Task<Forum?> GetForumByTitle(string title);
 }

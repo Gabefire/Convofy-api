@@ -13,13 +13,15 @@ public class PostController(
     IPostService postService,
     IVotingService votingService,
     ICommentService commentService,
-    IUserService userService) : ControllerBase
+    IUserService userService,
+    IUserFollowService userFollowService) : ControllerBase
 {
     private readonly IValidator _validate = validate;
     private readonly IPostService _postService = postService;
     private readonly IVotingService _votingService = votingService;
     private readonly ICommentService _commentService = commentService;
     private readonly IUserService _userService = userService;
+    private readonly IUserFollowService _userFollowService = userFollowService;
     // GET all Posts by search
     [Authorize]
     [HttpGet]
@@ -72,7 +74,47 @@ public class PostController(
 
         var postList = await _postService.GetPostsByForumId(forumId, limit, offset);
 
-        return Ok(postList);
+        var postDtos = new List<PostDto>();
+        foreach (var post in postList)
+        {
+            var (upVoteCount, downVoteCount) = await _votingService.GetUpvoteAndDownvoteCountByObjectId(post.Id);
+            var commentCount = await _commentService.GetCommentCountByPostId(post.Id);
+            var user = await _userService.GetById(post.CreatorUserId);
+            UserSearchDto? owner = null;
+
+            if (user != null)
+            {
+                owner = new UserSearchDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    FileLink = user.FileLink,
+                };
+            }
+            else
+            {
+                owner = new UserSearchDto
+                {
+                    Id = post.CreatorUserId,
+                    UserName = "Deleted User",
+                };
+            }
+
+            var postDto = new PostDto
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Content = post.Content,
+                UpVotes = upVoteCount,
+                DownVotes = downVoteCount,
+                Comments = commentCount,
+                Forum = null,
+                Owner = owner,
+            };
+            postDtos.Add(postDto);
+        }
+
+        return Ok(postDtos);
     }
 
     // DELETE delete post

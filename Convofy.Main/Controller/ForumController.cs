@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Convofy.Main.Interfaces;
 using Convofy.Main.Models.Forum;
+using Convofy.Main.Models.User;
 
 namespace Convofy.Main.Controller;
 
@@ -9,10 +10,16 @@ namespace Convofy.Main.Controller;
 [Route("api/[controller]")]
 public class ForumController(
     IValidator validate,
-    IForumService forumService) : ControllerBase
+    IForumService forumService,
+    IUserFollowService userFollowService,
+    IPostService postService,
+    IUserService userService) : ControllerBase
 {
     private readonly IValidator _validate = validate;
     private readonly IForumService _forumService = forumService;
+    private readonly IUserFollowService _userFollowService = userFollowService;
+    private readonly IPostService _postService = postService;
+    private readonly IUserService _userService = userService;
     // GET all Forums
     [Authorize]
     [HttpGet]
@@ -30,13 +37,113 @@ public class ForumController(
         return Ok(forums);
     }
 
+    // Get forum
+    [Authorize]
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetForum(Guid id)
+    {
+        var forum = await _forumService.GetForumByIdOrFail(id);
+        var user = await _userService.GetById(forum.CreatorUserId);
+
+        UserSearchDto? owner = null;
+        if (user != null)
+        {
+            owner = new UserSearchDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                FileLink = user.FileLink,
+            };
+        }
+        else
+        {
+            owner = new UserSearchDto
+            {
+                Id = forum.CreatorUserId,
+                UserName = "Deleted User",
+            };
+        }
+        var forumDto = new ForumDto
+        {
+            Id = forum.Id,
+            Title = forum.Title,
+            Description = forum.Description,
+            Color = forum.Color,
+            FileLink = forum.FileLink,
+            Owner = owner,
+        };
+        return Ok(forumDto);
+    }
+
     //POST create new forum
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateForum(ForumDto request)
     {
         var user = await _validate.ValidateJwt(HttpContext);
-        await _forumService.CreateForum(request, user.Id);
+        var forum = await _forumService.GetForumByTitle(request.Title);
+        if (forum != null)
+        {
+            return Conflict("Forum with this title already exists");
+        }
+        var createdForum = await _forumService.CreateForum(request, user.Id);
+
+        var userForumFollow = new UserForumFollows
+        {
+            UserId = user.Id,
+            ForumId = createdForum.Id,
+        };
+        await _userFollowService.CreateUserForumFollow(userForumFollow);
+
+        var forumDto = new ForumDto
+        {
+            Id = createdForum.Id,
+            Title = createdForum.Title,
+            Description = createdForum.Description,
+            Color = createdForum.Color,
+            FileLink = createdForum.FileLink,
+            Owner = new UserSearchDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                FileLink = user.FileLink,
+            },
+        };
+        return Ok(forumDto);
+    }
+
+    // POST follow forum
+    [Authorize]
+    [HttpPost("follow")]
+    public async Task<IActionResult> FollowForum(Guid forumId)
+    {
+        var user = await _validate.ValidateJwt(HttpContext);
+        var userForumFollow = await _userFollowService.GetUserForumFollowByUserIdAndForumId(user.Id, forumId);
+        if (userForumFollow != null)
+        {
+            return Conflict("You are already following this forum");
+        }
+        var newUserForumFollow = new UserForumFollows
+        {
+            UserId = user.Id,
+            ForumId = forumId,
+        };
+        await _userFollowService.CreateUserForumFollow(newUserForumFollow);
+        return Ok();
+    }
+
+    // POST unfollow forum
+    [Authorize]
+    [HttpPost("unfollow")]
+    public async Task<IActionResult> UnfollowForum(Guid forumId)
+    {
+        var user = await _validate.ValidateJwt(HttpContext);
+        var userForumFollow = await _userFollowService.GetUserForumFollowByUserIdAndForumId(user.Id, forumId);
+        if (userForumFollow == null)
+        {
+            return Conflict("You are not following this forum");
+        }
+        await _userFollowService.DeleteUserForumFollow(userForumFollow.Id);
         return Ok();
     }
 
@@ -58,12 +165,12 @@ public class ForumController(
 
     // GET search for forum
     [Authorize]
-    [HttpGet("{name}")]
-    public async Task<ActionResult> SearchForum(string name, [FromQuery] int limit = 10, [FromQuery] int offset = 0)
+    [HttpGet]
+    public async Task<ActionResult> SearchForum([FromQuery] string search, [FromQuery] int limit = 10, [FromQuery] int offset = 0)
     {
         await _validate.ValidateJwt(HttpContext);
 
-        var forumList = await _forumService.SearchForums(name, limit, offset);
+        var forumList = await _forumService.SearchForums(search, limit, offset);
 
         return Ok(forumList);
     }
@@ -80,6 +187,12 @@ public class ForumController(
         if (forum.CreatorUserId != user.Id)
         {
             return Forbid("Only the creator can delete this forum");
+        }
+
+        var posts = await _postService.GetPostsByForumId(id, 1, 0);
+        if (posts.Count > 0)
+        {
+            return BadRequest("This forum has posts and cannot be deleted");
         }
 
         await _forumService.DeleteForum(id);
