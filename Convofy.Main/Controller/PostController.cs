@@ -4,6 +4,8 @@ using Convofy.Main.Interfaces;
 using Convofy.Main.Models.Post;
 using Convofy.Main.Models.Comment;
 using Convofy.Main.Models.User;
+using Convofy.Main.Models.Forum;
+using Convofy.Main.Models.UserVote;
 namespace Convofy.Main.Controller;
 
 [ApiController]
@@ -14,14 +16,15 @@ public class PostController(
     IVotingService votingService,
     ICommentService commentService,
     IUserService userService,
-    IUserFollowService userFollowService) : ControllerBase
+    IForumService forumService) : ControllerBase
 {
     private readonly IValidator _validate = validate;
     private readonly IPostService _postService = postService;
     private readonly IVotingService _votingService = votingService;
     private readonly ICommentService _commentService = commentService;
     private readonly IUserService _userService = userService;
-    private readonly IUserFollowService _userFollowService = userFollowService;
+    private readonly IForumService _forumService = forumService;
+
     // GET all Posts by search
     [Authorize]
     [HttpGet]
@@ -77,39 +80,68 @@ public class PostController(
         var postDtos = new List<PostDto>();
         foreach (var post in postList)
         {
-            var (upVoteCount, downVoteCount) = await _votingService.GetUpvoteAndDownvoteCountByObjectId(post.Id);
-            var commentCount = await _commentService.GetCommentCountByPostId(post.Id);
-            var user = await _userService.GetById(post.CreatorUserId);
-            UserSearchDto? owner = null;
+            var votesTask = _votingService.GetUpvoteAndDownvoteCountByObjectId(post.Id);
+            var commentCountTask = _commentService.GetCommentCountByPostId(post.Id);
+            var forumTask = _forumService.GetForumByIdOrFail(post.ForumId);
 
-            if (user != null)
+            await Task.WhenAll(votesTask, commentCountTask, forumTask);
+
+            var (upVoteCount, downVoteCount) = await votesTask;
+            var commentCount = await commentCountTask;
+            var forum = await forumTask;
+
+            var forumUser = await _userService.GetById(forum.CreatorUserId);
+            UserSearchDto forumOwner = forumUser != null
+                ? new UserSearchDto
+                {
+                    Id = forumUser.Id,
+                    UserName = forumUser.UserName,
+                    FileLink = forumUser.FileLink,
+                }
+                : new UserSearchDto
+                {
+                    Id = forum.CreatorUserId,
+                    UserName = "Deleted User",
+                };
+
+            var forumDto = new ForumDto
             {
-                owner = new UserSearchDto
+                Id = forum.Id,
+                Title = forum.Title,
+                Description = forum.Description,
+                Color = forum.Color,
+                FileLink = forum.FileLink,
+                Owner = forumOwner,
+            };
+
+            var user = await _userService.GetById(post.CreatorUserId);
+            UserSearchDto owner = user != null
+                ? new UserSearchDto
                 {
                     Id = user.Id,
                     UserName = user.UserName,
                     FileLink = user.FileLink,
-                };
-            }
-            else
-            {
-                owner = new UserSearchDto
+                }
+                : new UserSearchDto
                 {
                     Id = post.CreatorUserId,
                     UserName = "Deleted User",
                 };
-            }
+
+            bool liked = user != null && await _votingService.GetVoteByObjectIdAndUserId(post.Id, user.Id) != null;
 
             var postDto = new PostDto
             {
                 Id = post.Id,
                 Title = post.Title,
+                Date = post.CreatedAt,
                 Content = post.Content,
                 UpVotes = upVoteCount,
                 DownVotes = downVoteCount,
                 Comments = commentCount,
-                Forum = null,
+                ForumData = forumDto,
                 Owner = owner,
+                Liked = liked,
             };
             postDtos.Add(postDto);
         }
@@ -201,6 +233,37 @@ public class PostController(
             commentDtos.Add(commentDto);
         }
         return Ok(commentDtos);
+    }
+
+    // POST upvote post
+    [Authorize]
+    [HttpPost("up-vote")]
+    public async Task<ActionResult> UpVotePost(Guid postId)
+    {
+        var user = await _validate.ValidateJwt(HttpContext);
+
+        await _votingService.CreateVote(user.Id, new UserVoteDto
+        {
+            ObjectId = postId,
+            IsUpVote = true,
+            ObjectType = ObjectType.Post,
+        });
+        return Ok();
+    }
+
+    // POST downvote post
+    [Authorize]
+    [HttpPost("down-vote")]
+    public async Task<ActionResult> DownVotePost(Guid postId)
+    {
+        var user = await _validate.ValidateJwt(HttpContext);
+        await _votingService.CreateVote(user.Id, new UserVoteDto
+        {
+            ObjectId = postId,
+            IsUpVote = false,
+            ObjectType = ObjectType.Post,
+        });
+        return Ok();
     }
 
     private async Task<List<CommentDto>> GetAllCommentChildrenDtos(Comment comment, List<CommentDto> commentDtos, Guid postId)

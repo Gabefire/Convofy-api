@@ -13,4 +13,5 @@ public interface IVotingService
     Task<int> GetUpvoteCountByObjectId(Guid objectId);
     Task<int> GetDownvoteCountByObjectId(Guid objectId);
     Task<(int upvotes, int downvotes)> GetUpvoteAndDownvoteCountByObjectId(Guid objectId);
+    Task<UserVote?> GetVoteByObjectIdAndUserId(Guid objectId, Guid userId);
 }

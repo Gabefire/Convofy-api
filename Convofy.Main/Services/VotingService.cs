@@ -106,4 +106,9 @@ public class VotingService : IVotingService
             downvotes: votes.GetValueOrDefault(false, 0)
         );
     }
+
+    public async Task<UserVote?> GetVoteByObjectIdAndUserId(Guid objectId, Guid userId)
+    {
+        return await _context.UserVotes.FirstOrDefaultAsync(v => v.ObjectId == objectId && v.CreatorUserId == userId);
+    }
 }

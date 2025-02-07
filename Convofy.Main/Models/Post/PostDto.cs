@@ -12,8 +12,10 @@ public class PostDto
     public int UpVotes { get; set; }
     public int DownVotes { get; set; }
     public int Comments { get; set; }
-    public required ForumDto? Forum { get; set; }
+    public required ForumDto? ForumData { get; set; }
     public required UserSearchDto Owner { get; set; }
+    public bool Liked { get; set; }
+    public DateTime Date { get; set; }
 }
 
 public class CreatePostDto
