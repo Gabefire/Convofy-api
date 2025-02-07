@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Convofy.Main.Interfaces;
 using Convofy.Main.Models.Post;
-
+using Convofy.Main.Models.Comment;
+using Convofy.Main.Models.User;
 namespace Convofy.Main.Controller;
 
 [ApiController]
@@ -10,11 +11,15 @@ namespace Convofy.Main.Controller;
 public class PostController(
     IValidator validate,
     IPostService postService,
-    IVotingService votingService) : ControllerBase
+    IVotingService votingService,
+    ICommentService commentService,
+    IUserService userService) : ControllerBase
 {
     private readonly IValidator _validate = validate;
     private readonly IPostService _postService = postService;
     private readonly IVotingService _votingService = votingService;
+    private readonly ICommentService _commentService = commentService;
+    private readonly IUserService _userService = userService;
     // GET all Posts by search
     [Authorize]
     [HttpGet]
@@ -112,5 +117,86 @@ public class PostController(
     {
         var downVotes = await _votingService.GetDownvoteCountByObjectId(postId);
         return Ok(downVotes);
+    }
+
+    [Authorize]
+    [HttpGet("comments")]
+    public async Task<ActionResult> GetComments(Guid postId, [FromQuery] int limit = 10, [FromQuery] int offset = 0)
+    {
+        var comments = await _commentService.GetRootCommentsByPostId(postId, limit, offset);
+        var commentDtos = new List<CommentDto>();
+        foreach (var comment in comments)
+        {
+            var user = await _userService.GetById(comment.CreatorUserId);
+            UserSearchDto? userDto = null;
+            if (user == null)
+            {
+                userDto = new UserSearchDto
+                {
+                    Id = comment.CreatorUserId,
+                    UserName = "Deleted User",
+                };
+            }
+            else
+            {
+                userDto = new UserSearchDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    FileLink = user.FileLink,
+                };
+            }
+            var commentDto = new CommentDto
+            {
+                Content = comment.Content,
+                From = userDto,
+                Children = [],
+                UpdatedAt = comment.UpdatedAt,
+                PostId = postId,
+            };
+            var childDtos = await GetAllCommentChildrenDtos(comment, commentDto.Children, postId);
+            commentDto.Children = childDtos;
+            commentDtos.Add(commentDto);
+        }
+        return Ok(commentDtos);
+    }
+
+    private async Task<List<CommentDto>> GetAllCommentChildrenDtos(Comment comment, List<CommentDto> commentDtos, Guid postId)
+    {
+        var children = await _commentService.GetChildCommentsByCommentId(comment.Id);
+        foreach (var child in children)
+        {
+            var user = await _userService.GetById(child.CreatorUserId);
+            UserSearchDto? userDto = null;
+            if (user == null)
+            {
+                userDto = new UserSearchDto
+                {
+                    Id = child.CreatorUserId,
+                    UserName = "Deleted User",
+                };
+            }
+            else
+            {
+                userDto = new UserSearchDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    FileLink = user.FileLink,
+                };
+            }
+            var commentDto = new CommentDto
+            {
+                Content = child.Content,
+                From = userDto,
+                Children = [],
+                UpdatedAt = child.UpdatedAt,
+                PostId = postId,
+            };
+            var childChildren = await GetAllCommentChildrenDtos(child, commentDtos, postId);
+            commentDto.Children = childChildren;
+            commentDtos.Add(commentDto);
+        }
+        return commentDtos;
     }
 }

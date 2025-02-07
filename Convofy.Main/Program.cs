@@ -83,14 +83,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 });
 
 builder.Services.AddScoped<Convofy.Main.Interfaces.IValidator, Convofy.Main.Util.Validator>();
-builder.Services.AddScoped<Convofy.Main.Interfaces.IForumService, Convofy.Main.Services.ForumService>();
-builder.Services.AddScoped<Convofy.Main.Interfaces.IPostService, Convofy.Main.Services.PostService>();
-builder.Services.AddScoped<Convofy.Main.Interfaces.IVotingService, Convofy.Main.Services.VotingService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IForumService, ForumService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IPostService, PostService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IVotingService, VotingService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.ICommentService, CommentService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IUserService, UserService>();
 
 var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapControllers();
 app.UseHealthChecks("/health");
