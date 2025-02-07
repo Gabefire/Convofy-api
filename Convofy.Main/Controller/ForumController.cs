@@ -1,35 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Convofy.Main.Interfaces;
 using Convofy.Main.Models.Forum;
-using Convofy.Main.Services;
-namespace Convofy.Controllers;
+
+namespace Convofy.Main.Controller;
 
 [ApiController]
 [Route("api/[controller]")]
 public class ForumController(
-    IConfiguration configuration,
-    DatabaseContext context,
-    ILogger<UserController> logger,
     IValidator validate,
     IForumService forumService) : ControllerBase
 {
-    private readonly DatabaseContext _context = context;
-    private readonly IConfiguration _configuration = configuration;
     private readonly IValidator _validate = validate;
-    private readonly ILogger _logger = logger;
     private readonly IForumService _forumService = forumService;
     // GET all Forums
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> Forums([FromQuery] int limit = 10, [FromQuery] int offset = 0)
     {
-        var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
+        await _validate.ValidateJwt(HttpContext);
 
         if (limit <= 0 || offset < 0)
         {
@@ -47,11 +36,6 @@ public class ForumController(
     public async Task<IActionResult> CreateForum(ForumDto request)
     {
         var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
-
         await _forumService.CreateForum(request, user.Id);
         return Ok();
     }
@@ -62,12 +46,13 @@ public class ForumController(
     public async Task<ActionResult> EditForum(ForumDto forumDto)
     {
         var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
+        var forum = await _forumService.GetForumByIdOrFail(forumDto.Id);
+        if (forum.CreatorUserId != user.Id)
         {
-            return Unauthorized();
+            return Forbid("Only the creator can edit this forum");
         }
 
-        await _forumService.EditForum(forumDto);
+        await _forumService.EditForum(forum, forumDto);
         return Ok();
     }
 
@@ -76,12 +61,7 @@ public class ForumController(
     [HttpGet("{name}")]
     public async Task<ActionResult> SearchForum(string name, [FromQuery] int limit = 10, [FromQuery] int offset = 0)
     {
-        // Validate JWT and get user
-        var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
+        await _validate.ValidateJwt(HttpContext);
 
         var forumList = await _forumService.SearchForums(name, limit, offset);
 
@@ -94,23 +74,15 @@ public class ForumController(
     public async Task<ActionResult> DeleteForum(Guid id)
     {
         var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
 
-        var forum = await _context.Forums.FirstOrDefaultAsync(f => f.Id == id);
-        if (forum == null)
-        {
-            return NotFound("Forum not found");
-        }
+        var forum = await _forumService.GetForumByIdOrFail(id);
 
         if (forum.CreatorUserId != user.Id)
         {
             return Forbid("Only the creator can delete this forum");
         }
 
-        await _forumService.DeleteForum(id, user.Id);
+        await _forumService.DeleteForum(id);
         return Ok();
     }
 }

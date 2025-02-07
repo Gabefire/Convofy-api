@@ -1,9 +1,9 @@
-using Convofy.Models.User;
+using Convofy.Main.Models.User;
 
 namespace Convofy.Main.Interfaces
 {
     public interface IValidator
     {
-        Task<User?> ValidateJwt(HttpContext context);
+        Task<User> ValidateJwt(HttpContext context);
     }
 }

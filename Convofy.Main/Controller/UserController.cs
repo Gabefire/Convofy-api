@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
-using Convofy.Models.User;
-using Convofy.Services;
+using Convofy.Main.Models.User;
+using Convofy.Main.Services;
 using Microsoft.EntityFrameworkCore;
-using Convofy.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Convofy.Main.Interfaces;
 
-namespace Convofy.Controllers;
+namespace Convofy.Main.Controller;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -43,7 +43,7 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
             UserName = request.UserName,
             HashedPassword = passwordHash,
             Email = request.Email,
-            ProfilePicLink = request.ProfilePicLink
+            FileLink = request.FileLink,
         };
 
         await _context.Users.AddAsync(user);
@@ -59,7 +59,6 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
     public async Task<IActionResult> Login(UserLoginDto request)
     {
         // logins in with email. User name is a placeholder
-
         var user = await _context.Users.Where(x => x.Email == request.Email).FirstOrDefaultAsync();
         _logger.LogInformation("info: User found: {User}", user?.Id);
         if (user == null)
@@ -71,7 +70,8 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
         {
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
             return BadRequest("Password or username is incorrect");
-        };
+        }
+        ;
         string token = CreateToken(user);
 
         return Ok(new { token, userName = user.UserName, id = user.Id, color = user.Color });
@@ -83,10 +83,6 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
     public async Task<ActionResult> EditUser(UserDto userDto)
     {
         var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
 
         if (!userDto.UserName.IsNullOrEmpty())
         {
@@ -118,13 +114,18 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
     {
         // Validate JWT and get user
         var user = await _validate.ValidateJwt(HttpContext);
-        if (user == null)
-        {
-            return Unauthorized();
-        }
 
-
-        var userList = await _context.Users.Where(x => x.Id != user.Id).Where(x => x.UserName.ToLower().Contains(name.ToLower())).Select(x => new UserSearchDto { Id = x.Id, UserName = x.UserName, ProfilePicLink = x.ProfilePicLink }).Take(5).ToListAsync();
+        var userList = await _context.Users
+            .Where(x => x.Id != user.Id)
+            .Where(x => x.UserName.ToLower().Contains(name.ToLower()))
+            .Select(x => new UserSearchDto
+            {
+                Id = x.Id,
+                UserName = x.UserName,
+                FileLink = x.FileLink
+            })
+            .Take(5)
+            .ToListAsync();
         return Ok(userList);
     }
 
@@ -135,8 +136,8 @@ public class UserController(IConfiguration configuration, DatabaseContext contex
         List<Claim> claims =
         [
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-        ];
+                new(ClaimTypes.Email, user.Email),
+            ];
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
             _configuration.GetSection("JwtSettings:Key").Value!

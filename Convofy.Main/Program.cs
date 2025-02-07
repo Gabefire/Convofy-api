@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Text;
-using Convofy.Services;
+using Convofy.Main.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -84,6 +84,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<Convofy.Main.Interfaces.IValidator, Convofy.Main.Util.Validator>();
 builder.Services.AddScoped<Convofy.Main.Interfaces.IForumService, Convofy.Main.Services.ForumService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IPostService, Convofy.Main.Services.PostService>();
+builder.Services.AddScoped<Convofy.Main.Interfaces.IVotingService, Convofy.Main.Services.VotingService>();
 
 var app = builder.Build();
 

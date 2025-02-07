@@ -4,18 +4,12 @@ using Convofy.Main.Interfaces;
 
 namespace Convofy.Main.Services
 {
-    public class ForumService : IForumService
+    public class ForumService(DatabaseContext context, ILogger<ForumService> logger) : IForumService
     {
-        private readonly DatabaseContext _context;
-        private readonly ILogger<ForumService> _logger;
+        private readonly DatabaseContext _context = context;
+        private readonly ILogger<ForumService> _logger = logger;
 
-        public ForumService(DatabaseContext context, ILogger<ForumService> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
-        public async Task<Forum?> CreateForum(ForumDto forumDto, Guid userId)
+        public async Task<Forum> CreateForum(ForumDto forumDto, Guid userId)
         {
             var forum = new Forum
             {
@@ -32,14 +26,8 @@ namespace Convofy.Main.Services
             return forum;
         }
 
-        public async Task<Forum> EditForum(ForumDto forumDto, Guid userId)
+        public async Task<Forum> EditForum(Forum forum, ForumDto forumDto)
         {
-            var forum = await GetForumById(forumDto.Id);
-            if (forum == null || forum.CreatorUserId != userId)
-            {
-                throw new Exception("You are not the creator of this forum");
-            }
-
             forum.Title = forumDto.Title ?? forum.Title;
             forum.Content = forumDto.Content ?? forum.Content;
             forum.Color = forumDto.Color ?? forum.Color;
@@ -49,9 +37,9 @@ namespace Convofy.Main.Services
             return forum;
         }
 
-        public async Task<Forum?> GetForumById(Guid id)
+        public async Task<Forum> GetForumByIdOrFail(Guid id)
         {
-            return await _context.Forums.FirstOrDefaultAsync(f => f.Id == id);
+            return await _context.Forums.FirstOrDefaultAsync(f => f.Id == id) ?? throw new Exception("Forum not found");
         }
 
         public async Task<List<Forum>> GetForums(int limit, int offset)
@@ -62,13 +50,10 @@ namespace Convofy.Main.Services
                 .Take(limit)
                 .ToListAsync();
         }
-        public async Task DeleteForum(Guid id, Guid userId)
+        public async Task DeleteForum(Guid id)
         {
-            var forum = await GetForumById(id);
-            if (forum == null || forum.CreatorUserId != userId)
-            {
-                throw new Exception("You are not the creator of this forum");
-            }
+            var forum = await GetForumByIdOrFail(id);
+
             _context.Forums.Remove(forum);
             await _context.SaveChangesAsync();
             _logger.LogInformation("[ForumService] Forum deleted successfully: {ForumId}", forum.Id);
@@ -76,7 +61,7 @@ namespace Convofy.Main.Services
 
         public async Task<Forum> EditForum(ForumDto forumDto)
         {
-            var forum = await GetForumById(forumDto.Id) ?? throw new Exception("Forum not found");
+            var forum = await GetForumByIdOrFail(forumDto.Id);
 
             forum.Title = forumDto.Title ?? forum.Title;
             forum.Content = forumDto.Content ?? forum.Content;

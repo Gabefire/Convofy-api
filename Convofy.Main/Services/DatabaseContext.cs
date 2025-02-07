@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Convofy.Models.User;
+using Convofy.Main.Models.User;
 using Convofy.Main.Models.Forum;
 using Convofy.Main.Models.Post;
-
+using Convofy.Main.Models.UserVote;
 namespace Convofy.Main.Services;
 public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
 {
@@ -10,6 +10,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public required DbSet<Forum> Forums { get; set; }
     public required DbSet<UserForumFollows> UserForumFollows { get; set; }
     public required DbSet<Post> Posts { get; set; }
+    public required DbSet<UserVote> UserVotes { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -31,6 +32,11 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
 
         modelBuilder.Entity<Post>()
             .Property(p => p.UpdatedAt)
+            .HasDefaultValue(DateTime.UtcNow)
+            .ValueGeneratedOnUpdate();
+
+        modelBuilder.Entity<UserVote>()
+            .Property(uv => uv.UpdatedAt)
             .HasDefaultValue(DateTime.UtcNow)
             .ValueGeneratedOnUpdate();
     }
@@ -71,6 +77,15 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
         foreach (var entry in postEntries)
         {
             ((Post)entry.Entity).UpdatedAt = DateTime.UtcNow;
+        }
+
+        var userVoteEntries = ChangeTracker
+            .Entries()
+            .Where(e => e.Entity is UserVote && e.State == EntityState.Modified);
+
+        foreach (var entry in userVoteEntries)
+        {
+            ((UserVote)entry.Entity).UpdatedAt = DateTime.UtcNow;
         }
 
         return base.SaveChangesAsync(cancellationToken);

@@ -1,15 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
-using Convofy.Main.Services;
 using Convofy.Main.Models.Post;
+using Convofy.Main.Interfaces;
 
-namespace Convofy.Main.Services.PostService;
+namespace Convofy.Main.Services;
 
-public class PostService
+public class PostService : IPostService
 {
     private readonly DatabaseContext _context;
     private readonly ILogger<PostService> _logger;
@@ -20,42 +15,40 @@ public class PostService
         _logger = logger;
     }
 
-    public async Task<Post> CreatePost(PostDto postDto)
+    public async Task<Post> GetPostByIdOrFail(Guid id)
     {
-        var post = new Post { ForumId = postDto.ForumId, Content = postDto.Content, FileLink = postDto.FileLink };
+        return await _context.Posts.FirstOrDefaultAsync(p => p.Id == id) ?? throw new Exception("Post not found");
+    }
+
+    public async Task<Post> CreatePost(CreatePostDto createPostDto, Guid userId)
+    {
+        var post = new Post
+        {
+            ForumId = createPostDto.ForumId,
+            Content = createPostDto.Content,
+            CreatorUserId = userId,
+            Title = createPostDto.Title
+        };
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
-        _logger.LogInformation("[PostService] Post created successfully", post.Id);
+        _logger.LogInformation("[PostService] Post created successfully {PostId}", post.Id);
         return post;
     }
 
-    public async Task<Post> EditPost(PostDto postDto, Guid userId)
+    public async Task<Post> EditPost(Post post, EditPostDto editPostDto)
     {
-        var post = await GetPostById(postDto.Id);
-        if (post.CreatorUserId != userId)
-        {
-            throw new Exception("You are not the creator of this post");
-        }
-
-        post.Content = postDto.Content ?? post.Content;
-        post.FileLink = postDto.FileLink ?? post.FileLink;
+        post.Content = editPostDto.Content ?? post.Content;
+        post.Title = editPostDto.Title ?? post.Title;
         await _context.SaveChangesAsync();
-        _logger.LogInformation("[PostService] Post edited successfully", post.Id);
+        _logger.LogInformation("[PostService] Post edited successfully {PostId}", post.Id);
         return post;
     }
 
-    public async Task<Post> DeletePost(Guid id, Guid userId)
+    public async Task DeletePost(Post post)
     {
-        var post = await GetPostById(id);
-        if (post.CreatorUserId != userId)
-        {
-            throw new Exception("You are not the creator of this post");
-        }
-
         _context.Posts.Remove(post);
         await _context.SaveChangesAsync();
-        _logger.LogInformation("[PostService] Post deleted successfully", post.Id);
-        return post;
+        _logger.LogInformation("[PostService] Post deleted successfully {PostId}", post.Id);
     }
 
     public async Task<List<Post>> GetPostsByForumId(Guid forumId, int limit, int offset)
@@ -68,7 +61,7 @@ public class PostService
             .ToListAsync();
     }
 
-    public async Task<List<Post>> GetUsers(string search, int limit, int offset)
+    public async Task<List<Post>> SearchPosts(string search, int limit, int offset)
     {
         return await _context.Posts
             .Where(p => p.Title.Contains(search))
